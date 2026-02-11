@@ -12,50 +12,62 @@ class HashTable:
     def primary_hash(self, key: str) -> int:
         return sum(ord(c) for c in key) % self.size
     
-    def secondary_hash(self, key: str) -> int:
-        hash_val = 0
+    def polynomial_hash(self, key: str, p: int = 31) -> int:
+        hash_val = 0        
+        power = 1
         for c in key:
-            hash_val = (hash_val * 31 + ord(c)) % self.size
-        
-        X = 7  
+            hash_val = hash_val + (ord(c) - ord('a') + 1) * power
+            power = power * p
+        return hash_val
+    
+    def secondary_hash(self, key: str) -> int:
+        hash_val = self.polynomial_hash(key, p=31)
+        X = 997  
         step = X - (hash_val % X)
-        return step
+        return step if step != 0 else 1
     
     def linear_probing(self, key: str, value: int = 1) -> int:
         hash_index = self.primary_hash(key)
-        probes = 0
+        probes = 1  
         
         while self.table[hash_index] is not None:
             probes += 1
             hash_index = (hash_index + 1) % self.size
+            if probes > self.size:  
+                break
         
         self.table[hash_index] = (key, value)
-        return probes + 1  
+        return probes  
     
-    def quadratic_probing(self, key: str, value: int = 1) -> int:
-        hash_index = self.primary_hash(key)
-        probes = 0
-        i = 0
+    def quadratic_probing(self, key: str, value: int = 1) -> int:    
+        base_index = self.primary_hash(key)
+        probes = 1  
+        i = 1
         
-        while self.table[hash_index] is not None:
+        while self.table[base_index] is not None:
             probes += 1
+            base_index = (self.primary_hash(key) + i * i) % self.size
             i += 1
-            hash_index = (self.primary_hash(key) + i * i) % self.size
+            if probes > self.size: 
+                break
         
-        self.table[hash_index] = (key, value)
-        return probes + 1  
+        self.table[base_index] = (key, value)
+        return probes  
     
     def double_hashing(self, key: str, value: int = 1) -> int:
         hash_index = self.primary_hash(key)
         step = self.secondary_hash(key)
-        probes = 0
+        probes = 1  
         
         while self.table[hash_index] is not None:
             probes += 1
             hash_index = (hash_index + step) % self.size
+            if probes > self.size:  
+                break
         
         self.table[hash_index] = (key, value)
-        return probes + 1  #
+        return probes  
+
 
 def read_dataset(filename: str) -> list:
     if not os.path.exists(filename):
@@ -65,6 +77,7 @@ def read_dataset(filename: str) -> list:
         lines = f.readlines()
     strings = [line.strip() for line in lines if line.strip()]
     return strings
+
 
 def compare_collision_methods(dataset: list, table_size: int = 100):
     methods = ['Linear Probing', 'Quadratic Probing', 'Double Hashing']
@@ -84,7 +97,7 @@ def compare_collision_methods(dataset: list, table_size: int = 100):
                 probes = ht.linear_probing(key)
             elif method_name == 'Quadratic Probing':
                 probes = ht.quadratic_probing(key)
-            else:  # Double Hashing
+            else:  
                 probes = ht.double_hashing(key)
             
             total_probes += probes
@@ -103,40 +116,36 @@ def compare_collision_methods(dataset: list, table_size: int = 100):
     
     return results
 
+
 def print_results(results: dict):
-    print("\n" + "="*60)
-    print("COMPARISON OF COLLISION RESOLUTION METHODS")
-    print("="*60)
+    print("\n" + "="*70)
+    print("COMPARISON OF COLLISION RESOLUTION METHODS - OPEN ADDRESSING")
+    print("="*70)
     print(f"{'Method':<20} {'Avg Probes':<15} {'Inserts':<10} {'Load Factor':<15}")
-    print("-"*60)
+    print("-"*70)
     
     for method, data in results.items():
         print(f"{method:<20} {data['average_probes']:<15.4f} "
               f"{data['successful_inserts']:<10} {data['load_factor']:<15.4f}")
     
-    print("="*60)
-    best_method = min(results.items(), key=lambda x: x[1]['average_probes'])
-    print(f"\nBest method: {best_method[0]} with average {best_method[1]['average_probes']:.4f} probes per insertion")
+    print("="*70)
+
+
 
 def main():
     DATASET_FILE = "string_dataset.txt"
     TABLE_SIZE = 1000  
-    
-    print("Hash Table Collision Resolution Methods Comparison")
-    print("Primary Hash Function: Sum of ASCII values")
-    print(f"Table Size: {TABLE_SIZE}")
-    print("-"*50)
+    print("="*70)
+    print("OPEN ADDRESSING COLLISION RESOLUTION METHODS")
     dataset = read_dataset(DATASET_FILE)
     
     if not dataset:
         print("No data to process. Exiting...")
         return
     
-    print(f"Loaded {len(dataset)} strings from dataset")
     results = compare_collision_methods(dataset, TABLE_SIZE)
     print_results(results)
-    
-    
+
 
 if __name__ == "__main__":
     main()
