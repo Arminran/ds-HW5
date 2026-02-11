@@ -1,53 +1,57 @@
-def ascii_sum_hash(s, M=1000000):
+def read_strings(file_path):
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+    strings = [line.strip() for line in lines if line.strip()]
+    return strings
+
+def ascii_sum_hash(s, M):
     total = sum(ord(ch) for ch in s)
     return total % M
 
-def polynomial_rolling_hash(s, p=31, M=1000000):
+def polynomial_rolling_hash(s, M, p=31):
     hash_value = 0
-    power_of_p = 1
+    power = 1
     for ch in s:
-        hash_value = (hash_value + (ord(ch) * power_of_p)) % M
-        power_of_p = (power_of_p * p) % M
+        hash_value = (hash_value + ord(ch) * power) % M
+        power = (power * p) % M
     return hash_value
 
-def count_collisions(strings, hash_function, M=1000000):
-    hash_table = {}
-    collisions = 0
-    for s in strings:
-        h = hash_function(s, M)
-        if h in hash_table:
-            collisions += 1
-            hash_table[h].append(s)
-        else:
-            hash_table[h] = [s]
-    return collisions, hash_table
+M = 1000
 
-def main():
-    filename = "string_dataset.txt"
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            unique_strings = [line.strip() for line in f if line.strip() != ""]
-    except FileNotFoundError:
-        print(f"file '{filename}' not found.")
-        return
+class HashTableChaining:
+    def __init__(self, hash_func):
+        self.size = M
+        self.hash_func = hash_func
+        self.table = [[] for _ in range(self.size)]
+        self.collisions = 0
 
-    if not unique_strings:
-        print("datset is empty .")
-        return
+    def insert(self, key):
+        index = self.hash_func(key, self.size)
+        if self.table[index]:
+            self.collisions += 1
+        self.table[index].append(key)
 
-    print(f"numbers of uniqe string: {len(unique_strings)}")
-
-    M = 1000  
-    collisions_ascii, table_ascii = count_collisions(unique_strings, ascii_sum_hash, M)
-    collisions_poly, table_poly = count_collisions(unique_strings, polynomial_rolling_hash, M)
-    print("\n--- result ---")
-    print(f"1. ASCII (with M={M}):")
-    print(f"numbers  of colision: {collisions_ascii}")
-    print(f"index that insert: {len(table_ascii)}")
-    print(f"\n2. Polynomial Rolling Hash (basis 31, M={M}):")
-    print(f"number colision: {collisions_poly}")
-    print(f"index that insert: {len(table_poly)}")
-
+    def get_collisions(self):
+        return self.collisions
 
 if __name__ == "__main__":
-    main()
+    strings = read_strings("string_dataset.txt")
+    
+    hash_funcs = [
+        ("ASCII Sum Method", ascii_sum_hash),
+        ("Polynomial Rolling Method", polynomial_rolling_hash)
+    ]
+    
+    results = []
+    
+    for name, func in hash_funcs:
+        ht = HashTableChaining(func)
+        for s in strings:
+            ht.insert(s)
+        results.append((name, ht.get_collisions()))
+    
+    print("result : number collision for string_dataset.txt (M = 1000):")
+    print("-" * 50)
+    for name, coll in results:
+        print(f"{name}: {coll} collision")
+    print("-" * 50)

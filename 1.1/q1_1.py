@@ -7,9 +7,9 @@ def read_student_ids(file_path):
     return ids
 def student_id_to_int(sid):
     return int(sid)
+
+
 M = 1000  
-
-
 def hash_division(key):
     return key % M
 
